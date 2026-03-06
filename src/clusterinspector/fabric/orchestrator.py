@@ -7,9 +7,13 @@ from clusterinspector.core.models import FleetReport, NodeReport
 from clusterinspector.core.ssh import SSHRunner
 from clusterinspector.core.timeouts import Deadline
 from clusterinspector.fabric.classify.fabrics import classify_fabrics
+from clusterinspector.fabric.classify.health import classify_health
+from clusterinspector.fabric.classify.impact import classify_impact
 from clusterinspector.fabric.probes.drivers import probe_drivers
 from clusterinspector.fabric.probes.interfaces import probe_interfaces
+from clusterinspector.fabric.probes.libfabric import probe_libfabric
 from clusterinspector.fabric.probes.pci import probe_pci
+from clusterinspector.fabric.probes.rdma import probe_rdma
 
 
 def _summarize(nodes: List[NodeReport]) -> dict:
@@ -70,7 +74,27 @@ def scan_fabric(args) -> FleetReport:
             node.evidence.extend(driver_evidence)
             node.raw["drivers"] = driver_data
 
+            rdma_data, rdma_evidence = probe_rdma(
+                runner=runner,
+                host=host,
+                deadline=deadline,
+                command_timeout_s=args.command_timeout,
+            )
+            node.evidence.extend(rdma_evidence)
+            node.raw["rdma"] = rdma_data
+
+            libfabric_data, libfabric_evidence = probe_libfabric(
+                runner=runner,
+                host=host,
+                deadline=deadline,
+                command_timeout_s=args.command_timeout,
+            )
+            node.evidence.extend(libfabric_evidence)
+            node.raw["libfabric"] = libfabric_data
+
             classify_fabrics(node)
+            classify_health(node)
+            classify_impact(node)
         except Exception as exc:
             node.ok = False
             node.error = str(exc)

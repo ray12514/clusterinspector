@@ -15,6 +15,14 @@ def _detect_from_driver(driver: str) -> str:
     return "unknown"
 
 
+def _pick_hpc_fabric(candidates):
+    priority = ["slingshot", "infiniband", "roce", "omnipath", "ethernet"]
+    for item in priority:
+        if item in candidates:
+            return item
+    return "unknown"
+
+
 def classify_fabrics(node: NodeReport) -> NodeReport:
     labels = []
     for iface in node.interfaces:
@@ -46,18 +54,17 @@ def classify_fabrics(node: NodeReport) -> NodeReport:
     node.primary_fabric = primary
     node.secondary_fabrics = secondary
     node.management_fabric = "ethernet"
-    node.likely_hpc_fabric = unique[0] if unique else "unknown"
-    node.health = "healthy" if unique else "unknown"
+    node.likely_hpc_fabric = _pick_hpc_fabric(unique)
     node.confidence = from_agreement(labels)
     if node.confidence == "low":
         node.confidence = from_signal_count(len(node.evidence))
 
-    if unique and all(x == "ethernet" for x in unique):
+    if unique and all(x == "ethernet" for x in unique) and "tcp_fallback_likely" not in node.diagnoses:
         node.diagnoses.append("tcp_fallback_likely")
 
     if families.get("mellanox") and not any(
         iface.driver in {"mlx5_core", "mlx4_core"} for iface in node.interfaces
-    ):
+    ) and "high_speed_nic_present_no_rdmastack" not in node.diagnoses:
         node.diagnoses.append("high_speed_nic_present_no_rdmastack")
 
     return node
