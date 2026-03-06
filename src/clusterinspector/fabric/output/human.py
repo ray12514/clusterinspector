@@ -1,6 +1,7 @@
 from typing import List
 
 from clusterinspector.core.models import FleetReport, NodeReport
+from clusterinspector.fabric.diagnosis import diagnosis_message
 
 
 def _render_node_line(node: NodeReport, include_diagnoses: bool) -> str:
@@ -25,6 +26,9 @@ def render_human(
     lines: List[str] = []
     for node in fleet.nodes:
         lines.append(_render_node_line(node, include_diagnoses=include_diagnoses))
+        if include_diagnoses and node.diagnoses:
+            for code in node.diagnoses:
+                lines.append(f"  - {code}: {diagnosis_message(code)}")
         if include_evidence and node.evidence:
             for ev in node.evidence:
                 lines.append(f"  - {ev.message} ({ev.code})")

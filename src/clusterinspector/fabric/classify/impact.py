@@ -23,4 +23,8 @@ def classify_impact(node: NodeReport) -> NodeReport:
     if node.health == "degraded" and "fast_path_present_but_degraded" not in node.diagnoses:
         node.diagnoses.append("fast_path_present_but_degraded")
 
+    if node.gpu_network_path == "likely_host_staged":
+        if "gpu_network_path_likely_host_staged" not in node.diagnoses:
+            node.diagnoses.append("gpu_network_path_likely_host_staged")
+
     return node

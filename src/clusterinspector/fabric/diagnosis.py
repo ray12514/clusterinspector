@@ -6,5 +6,10 @@ DIAGNOSIS_MESSAGES = {
     "possible_roce_path": "Signals suggest a possible RoCE path",
     "node_unsuitable_for_multi_node_mpi": "Node likely unsuitable for multi-node MPI fast path",
     "fast_path_present_but_degraded": "Fast path is present but appears degraded",
+    "gpu_network_path_likely_host_staged": "GPU traffic is likely host-staged",
     "node_probe_failed": "One or more probe stages failed on this node",
 }
+
+
+def diagnosis_message(code: str) -> str:
+    return DIAGNOSIS_MESSAGES.get(code, code)

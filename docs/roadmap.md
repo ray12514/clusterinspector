@@ -32,15 +32,23 @@ Acceptance for this phase:
 
 ## Phase 3: Fabric depth
 
-Status: planned.
+Status: in progress.
 
-Planned deliverables:
+Delivered so far:
 
-- RDMA probes (`rdma dev/link/resource`, `/sys/class/infiniband`, optional verbs tools)
+- RDMA probes (`rdma dev/link/resource`, `/sys/class/infiniband`)
 - libfabric provider probes (`fi_info -l`, `fi_info`)
 - health scoring (`healthy`, `degraded`, `impaired`, `unknown`)
-- impact diagnosis codes (for example TCP fallback and fast-path impairment)
-- optional GPU-path hinting with cautious labels only
+- impact diagnosis codes (including fallback/degraded/unsuitable flags)
+- optional GPU-path hinting with cautious labels
+- Markdown output mode
+
+Remaining for phase completion:
+
+- broaden parser coverage for more `rdma`/`fi_info` output variants
+- improve diagnosis rendering consistency in all output modes
+- execute cluster validation runs against known-good and known-degraded nodes
+- tune thresholds/confidence based on real cluster evidence
 
 ## Phase 4: Profile MVP
 

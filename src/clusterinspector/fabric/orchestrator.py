@@ -10,6 +10,7 @@ from clusterinspector.fabric.classify.fabrics import classify_fabrics
 from clusterinspector.fabric.classify.health import classify_health
 from clusterinspector.fabric.classify.impact import classify_impact
 from clusterinspector.fabric.probes.drivers import probe_drivers
+from clusterinspector.fabric.probes.gpu import probe_gpu_hints
 from clusterinspector.fabric.probes.interfaces import probe_interfaces
 from clusterinspector.fabric.probes.libfabric import probe_libfabric
 from clusterinspector.fabric.probes.pci import probe_pci
@@ -91,6 +92,17 @@ def scan_fabric(args) -> FleetReport:
             )
             node.evidence.extend(libfabric_evidence)
             node.raw["libfabric"] = libfabric_data
+
+            if args.include_gpu:
+                gpu_data, gpu_evidence = probe_gpu_hints(
+                    runner=runner,
+                    host=host,
+                    deadline=deadline,
+                    command_timeout_s=args.command_timeout,
+                )
+                node.evidence.extend(gpu_evidence)
+                node.raw["gpu"] = gpu_data
+                node.gpu_network_path = str(gpu_data.get("gpu_network_path", "unknown") or "unknown")
 
             classify_fabrics(node)
             classify_health(node)

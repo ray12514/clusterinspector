@@ -3,6 +3,7 @@ import argparse
 from clusterinspector.fabric.orchestrator import scan_fabric
 from clusterinspector.fabric.output.human import render_human
 from clusterinspector.fabric.output.jsonout import render_json
+from clusterinspector.fabric.output.markdown import render_markdown
 
 
 def build_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
@@ -13,7 +14,7 @@ def build_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument("--summary", action="store_true", help="Print fleet summary")
     parser.add_argument("--diagnose", action="store_true", help="Include diagnosis codes")
     parser.add_argument("--evidence", action="store_true", help="Include evidence in human output")
-    parser.add_argument("--format", choices=["human", "json"], default="human")
+    parser.add_argument("--format", choices=["human", "json", "markdown"], default="human")
     parser.add_argument("--include-gpu", action="store_true", help="Reserved for GPU path hints")
     parser.add_argument(
         "--passive-only",
@@ -31,6 +32,8 @@ def run(args: argparse.Namespace) -> int:
     fleet = scan_fabric(args)
     if args.format == "json":
         print(render_json(fleet, include_raw=False))
+    elif args.format == "markdown":
+        print(render_markdown(fleet))
     else:
         print(render_human(fleet, include_summary=args.summary, include_diagnoses=args.diagnose, include_evidence=args.evidence))
 
