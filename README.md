@@ -55,6 +55,8 @@ clusterinspector/
 
 - `docs/roadmap.md`: phased implementation plan and acceptance targets
 - `docs/decisions.md`: architecture decisions and rationale log
+- `docs/adr-template.md`: template for detailed architecture decision records
+- `docs/adr/`: long-form ADRs for major design choices
 - `docs/fabric.md`: fabric command behavior, options, and output model
 - `docs/profile.md`: profile command target schema and rollout plan
 - `docs/development.md`: development workflow, testing, and architecture notes
