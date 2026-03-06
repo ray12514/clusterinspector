@@ -82,6 +82,25 @@ Fleet summary currently includes:
 - `by_health`
 - `by_primary_fabric`
 
+## Diagnosis codes
+
+Common diagnosis codes currently emitted:
+
+- `tcp_fallback_likely`
+- `rdma_link_inactive`
+- `high_speed_nic_present_no_rdmastack`
+- `possible_slingshot_path`
+- `possible_roce_path`
+- `fast_path_present_but_degraded`
+- `node_unsuitable_for_multi_node_mpi`
+- `gpu_network_path_likely_host_staged`
+
+## Known limitations
+
+- GPU-path hints are heuristic and cautious by design; they do not prove runtime behavior.
+- Output formats may differ in detail level during active development (`json` is canonical).
+- Vendor-specific output variants for `rdma` and `fi_info` are still being broadened.
+
 ## Safety expectations
 
 - no root required

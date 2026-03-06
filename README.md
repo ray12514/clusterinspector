@@ -58,5 +58,6 @@ clusterinspector/
 - `docs/adr-template.md`: template for detailed architecture decision records
 - `docs/adr/`: long-form ADRs for major design choices
 - `docs/fabric.md`: fabric command behavior, options, and output model
+- `docs/cluster-validation.md`: real-cluster validation matrix and test workflow
 - `docs/profile.md`: profile command target schema and rollout plan
 - `docs/development.md`: development workflow, testing, and architecture notes
