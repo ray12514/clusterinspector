@@ -9,8 +9,10 @@ Both commands are designed to be non-root, read-only, and resilient when some to
 
 ## Project status
 
-- `fabric` is usable now for passive interface, PCI, and driver inspection.
-- `profile` is scaffolded and intentionally returns "not implemented yet" while we build it in phases.
+- `fabric` is usable now with interface/PCI/driver/RDMA/libfabric probe stages, health+impact diagnosis, and human/JSON/Markdown output.
+- `fabric` Phase 3 is code-complete; real-cluster validation is the remaining completion gate.
+- `profile` now emits a first working system-profile artifact with local/direct-node collection, YAML/JSON/human output, topology and network hints, and artifact-writing support.
+- `profile submit` remains scaffolded while batch profiling is hardened.
 
 ## Install and run
 
@@ -31,11 +33,11 @@ clusterinspector fabric --scheduler slurm --summary
 ## Command overview
 
 - `clusterinspector fabric`
-  - Current: local/SSH/scheduler host resolution, passive probe stages, human/JSON output.
-  - Next: RDMA/libfabric/GPU hint stages, richer health and impact diagnosis.
+  - Current: local/SSH/scheduler host resolution, passive probe stages, diagnosis rendering across human/JSON/Markdown, optional GPU-path hints.
+  - Next: complete real-cluster validation matrix and threshold tuning from observed evidence.
 - `clusterinspector profile`
-  - Current: CLI scaffold, planned submit mode scaffold.
-  - Next: schema-driven profile collection, ownership and externals classification.
+  - Current: working representative-node profile collection with YAML/JSON/human output and file-writing support.
+  - Next: site metadata inputs, comparison/drift checks, and submit-mode hardening.
 
 ## Repository layout
 

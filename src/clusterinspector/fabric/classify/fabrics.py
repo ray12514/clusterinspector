@@ -23,6 +23,12 @@ def _pick_hpc_fabric(candidates):
     return "unknown"
 
 
+def _fabric_signal_count(labels, families) -> int:
+    label_hits = len([x for x in labels if x and x != "unknown"])
+    family_hits = sum(1 for present in families.values() if present)
+    return label_hits + family_hits
+
+
 def classify_fabrics(node: NodeReport) -> NodeReport:
     labels = []
     for iface in node.interfaces:
@@ -57,7 +63,7 @@ def classify_fabrics(node: NodeReport) -> NodeReport:
     node.likely_hpc_fabric = _pick_hpc_fabric(unique)
     node.confidence = from_agreement(labels)
     if node.confidence == "low":
-        node.confidence = from_signal_count(len(node.evidence))
+        node.confidence = from_signal_count(_fabric_signal_count(labels, families))
 
     if unique and all(x == "ethernet" for x in unique) and "tcp_fallback_likely" not in node.diagnoses:
         node.diagnoses.append("tcp_fallback_likely")

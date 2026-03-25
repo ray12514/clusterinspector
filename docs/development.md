@@ -23,7 +23,7 @@ PYTHONPATH=src python3 -m clusterinspector.cli fabric --local --format json
 
 - `src/clusterinspector/core/`: reusable execution, timeout, host resolution, evidence, parsing primitives.
 - `src/clusterinspector/fabric/`: fleet-oriented passive diagnosis pipeline.
-- `src/clusterinspector/profile/`: representative-node profile pipeline (under active build).
+- `src/clusterinspector/profile/`: representative-node profile pipeline and system-profile artifact emitter.
 
 Execution model:
 
@@ -41,8 +41,7 @@ Execution model:
 
 ## Suggested near-term tasks
 
-- implement `fabric/probes/rdma.py`
-- implement `fabric/probes/libfabric.py`
-- wire `fabric/classify/health.py` and `fabric/classify/impact.py`
-- define diagnosis code catalog and message map alignment
-- start `profile/schema.py` with explicit versioned fields
+- run `docs/cluster-validation.md` on known-good and degraded cluster nodes
+- add parser fixtures for any newly observed `rdma` or `fi_info` output variants
+- tune health/confidence thresholds with captured cluster evidence
+- continue Profile Phase 4 depth work after Phase 3 validation closes

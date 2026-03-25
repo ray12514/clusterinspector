@@ -32,7 +32,7 @@ Acceptance for this phase:
 
 ## Phase 3: Fabric depth
 
-Status: in progress.
+Status: code-complete, cluster validation pending.
 
 Delivered so far:
 
@@ -42,25 +42,33 @@ Delivered so far:
 - impact diagnosis codes (including fallback/degraded/unsuitable flags)
 - optional GPU-path hinting with cautious labels
 - Markdown output mode
+- broader parser coverage for `rdma` and `fi_info` output variants
+- consistent diagnosis rendering details across human/JSON/Markdown outputs
 
 Remaining for phase completion:
 
-- broaden parser coverage for more `rdma`/`fi_info` output variants
-- improve diagnosis rendering consistency in all output modes
 - execute cluster validation runs against known-good and known-degraded nodes
 - tune thresholds/confidence based on real cluster evidence
 
 ## Phase 4: Profile MVP
 
-Status: planned.
+Status: initial implementation landed.
 
-Planned deliverables:
+Delivered so far:
 
 - profile schema v1
-- system/GPU/compiler/MPI probes
-- initial ownership classifier
-- primary YAML output and human summary
-- first working local and direct-node profile collection
+- system, GPU, compiler, MPI, modules, and fabric-hint probes
+- initial platform classification and capability-state payload
+- YAML, JSON, and human output modes
+- local and direct-node profile collection
+- topology and network-provider hints
+- artifact writing with context-based filenames
+
+Remaining for phase completion:
+
+- site metadata input and override files
+- comparison and drift checking against checked-in profiles
+- stronger curated validation summary integration
 
 ## Phase 5: Profile depth
 

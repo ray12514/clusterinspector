@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Set, Tuple
 
 from clusterinspector.core.evidence import make_evidence
@@ -6,15 +7,44 @@ from clusterinspector.core.runner import Runner
 from clusterinspector.core.timeouts import Deadline
 
 
+_NOISE_PROVIDER_TOKENS = {
+    "provider",
+    "providers",
+    "version",
+    "fabric",
+    "domain",
+    "type",
+    "protocol",
+    "endpoint",
+}
+
+
+def _provider_tokens(value: str) -> List[str]:
+    tokens: List[str] = []
+    for raw in re.split(r"[\s,;/]+", (value or "").lower()):
+        token = raw.strip().strip(":").strip("[]()")
+        if not token or token in _NOISE_PROVIDER_TOKENS:
+            continue
+        tokens.append(token)
+    return tokens
+
+
 def _providers_from_list(stdout: str) -> List[str]:
     providers: Set[str] = set()
     for line in (stdout or "").splitlines():
         item = line.strip()
         if not item:
             continue
-        token = item.split()[0].strip().lower()
-        if token:
-            providers.add(token)
+
+        lower = item.lower()
+        if lower.startswith("provider") and ":" in item:
+            for token in _provider_tokens(item.split(":", 1)[1]):
+                providers.add(token)
+            continue
+
+        token = item.split()[0].strip().rstrip(":")
+        for normalized in _provider_tokens(token):
+            providers.add(normalized)
     return sorted(providers)
 
 
@@ -24,11 +54,18 @@ def _providers_from_full(stdout: str) -> List[str]:
         line = raw.strip()
         if not line:
             continue
+
         lower = line.lower()
         if lower.startswith("provider") and ":" in line:
-            value = line.split(":", 1)[1].strip().lower()
-            if value:
-                providers.add(value)
+            value = line.split(":", 1)[1].strip()
+            for token in _provider_tokens(value):
+                providers.add(token)
+            continue
+
+        if re.match(r"^[a-z0-9_+.-]+:\s*$", lower):
+            for token in _provider_tokens(lower.split(":", 1)[0]):
+                providers.add(token)
+
     return sorted(providers)
 
 
@@ -52,7 +89,7 @@ def probe_libfabric(
     providers.update(_providers_from_full(fi_full.stdout))
     providers_sorted = sorted(providers)
 
-    fast_markers = {"verbs", "cxi", "psm2", "psm3", "opx", "efa"}
+    fast_markers = {"verbs", "cxi", "psm2", "psm3", "opx", "efa", "gni", "ucx"}
     has_fast_provider = any(p in fast_markers for p in providers_sorted)
 
     if providers_sorted:
@@ -71,6 +108,21 @@ def probe_libfabric(
                 message="fi_info not available on node",
                 source="libfabric",
                 confidence="medium",
+            )
+        )
+    elif fi_list.returncode != 0 or fi_full.returncode != 0:
+        evidence.append(
+            make_evidence(
+                code="fi_info_error",
+                message="fi_info returned an error before provider parsing",
+                source="libfabric",
+                confidence="medium",
+                data={
+                    "fi_info_l_returncode": fi_list.returncode,
+                    "fi_info_returncode": fi_full.returncode,
+                    "fi_info_l_stderr": fi_list.stderr.strip(),
+                    "fi_info_stderr": fi_full.stderr.strip(),
+                },
             )
         )
     else:

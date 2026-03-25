@@ -2,9 +2,9 @@
 
 `clusterinspector profile` is the platform-profile sibling command.
 
-Current state: scaffolded, not implemented yet.
+Current state: implemented for local and direct-node profile collection, with batch submit still scaffolded.
 
-The command shape is present now so we can keep CLI and packaging stable while implementing probe/classification stages.
+The command now emits a first working system-profile artifact and keeps the submit-mode scaffold while we harden batch collection.
 
 ## Intended purpose
 
@@ -27,27 +27,28 @@ clusterinspector profile submit --scheduler slurm --partition gpu --output profi
 
 Current behavior:
 
-- non-submit form prints scaffold message and exits non-zero
-- submit form prints scaffold message and exits non-zero
+- non-submit form collects profile data and renders human, YAML, or JSON output
+- `--output` writes a single artifact directly to a file
+- `--output-dir` writes one artifact per profile with context-based filenames
+- `--system-name`, `--site`, and `--context-name` allow artifact normalization
+- submit form still prints scaffold message and exits non-zero
 
-## Planned schema baseline
+## Current schema baseline
 
-The first profile schema version targets:
+The current profile schema includes:
 
-- platform identity (`system_name`, `vendor`, `node_class`, scheduler)
-- hardware summary (GPU, NIC)
-- ownership model (`vendor`, `site`, `mixed`, `unknown`)
-- compiler and MPI environment hints
-- module model hints
-- likely externals (`required`, `buildable`, `reason`)
-- stack class
-- gaps/risks/blockers
-- profile status (`draft`, `partial`, `validated`, `stale`)
+- system identity and platform classification
+- OS and scheduler facts
+- hardware summary for CPU, GPU, NIC, and network fabric
+- GPU topology and communication-provider hints where visible
+- compiler, MPI, modules, and active context hints
+- externals policy and capability-state payloads
+- validation summary placeholders for future evidence integration
 
 ## Implementation order
 
-1. schema and orchestrator data flow
-2. system/GPU/compiler/MPI probe stages
-3. ownership + YAML output
-4. modules/fabric reuse + externals + risks
-5. submit-mode hardening
+1. enrich with site metadata inputs and override files
+2. add comparison and drift checking against checked-in profiles
+3. deepen classifiers for externals, risks, and ownership
+4. connect curated validation summaries more cleanly
+5. harden submit-mode workflow

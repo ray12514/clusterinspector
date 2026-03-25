@@ -13,11 +13,23 @@ class TestProbeHelpers(unittest.TestCase):
         lines = ["link 1/1 state ACTIVE", "link 2/1 state DOWN"]
         self.assertEqual(_active_count(lines), 1)
 
+    def test_active_count_variants(self) -> None:
+        lines = [
+            "link mlx5_0/1 state ACTIVE physical_state LINK_UP",
+            "port 1 state: up",
+            "4: ACTIVE",
+            "state DOWN",
+        ]
+        self.assertEqual(_active_count(lines), 3)
+
     def test_provider_parsers(self) -> None:
-        l = _providers_from_list("verbs\ntcp\n")
-        f = _providers_from_full("provider: cxi\nprovider: verbs\n")
+        l = _providers_from_list("verbs:\ntcp\nprovider version\n")
+        f = _providers_from_full("provider: cxi;ofi_rxm\nprovider: verbs\npsm2:\n")
         self.assertIn("verbs", l)
+        self.assertIn("tcp", l)
         self.assertIn("cxi", f)
+        self.assertIn("ofi_rxm", f)
+        self.assertIn("psm2", f)
 
 
 if __name__ == "__main__":

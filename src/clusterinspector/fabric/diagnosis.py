@@ -1,3 +1,6 @@
+from typing import Dict, Iterable, List
+
+
 DIAGNOSIS_MESSAGES = {
     "tcp_fallback_likely": "Likely userspace fallback to TCP path",
     "high_speed_nic_present_no_rdmastack": "High-speed NIC detected without RDMA stack evidence",
@@ -13,3 +16,7 @@ DIAGNOSIS_MESSAGES = {
 
 def diagnosis_message(code: str) -> str:
     return DIAGNOSIS_MESSAGES.get(code, code)
+
+
+def diagnosis_details(codes: Iterable[str]) -> List[Dict[str, str]]:
+    return [{"code": code, "message": diagnosis_message(code)} for code in codes]

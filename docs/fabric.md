@@ -10,17 +10,17 @@ Implemented now:
 - passive interface probe stage
 - passive PCI probe stage
 - passive NIC driver probe stage
-- RDMA probe stage (`/sys/class/infiniband`, `rdma dev/link/resource`)
-- libfabric provider probe stage (`fi_info -l`, `fi_info`)
-- health and impact classification with diagnosis codes
+- RDMA probe stage (`/sys/class/infiniband`, `/sys/class/infiniband/*/ports/*/state`, `rdma dev/link/resource`)
+- libfabric provider probe stage (`fi_info -l`, `fi_info`) with provider token normalization
+- health and impact classification with diagnosis codes and mapped messages
 - optional GPU-path hints (`--include-gpu`) with cautious labels
 - fabric classification and confidence output
 - human, JSON, and Markdown formatting
 
 In progress:
 
-- broader parser coverage for diverse vendor output variants
 - cluster-grade validation against known-good and degraded nodes
+- threshold tuning from real cluster evidence
 
 ## CLI options
 
@@ -67,6 +67,7 @@ Per node fields currently include:
 - `confidence`
 - `gpu_network_path`
 - `diagnoses`
+- `diagnosis_details`
 - `evidence`
 
 Node failures are represented in-band with:
@@ -86,20 +87,20 @@ Fleet summary currently includes:
 
 Common diagnosis codes currently emitted:
 
-- `tcp_fallback_likely`
-- `rdma_link_inactive`
-- `high_speed_nic_present_no_rdmastack`
-- `possible_slingshot_path`
-- `possible_roce_path`
-- `fast_path_present_but_degraded`
-- `node_unsuitable_for_multi_node_mpi`
-- `gpu_network_path_likely_host_staged`
+- `tcp_fallback_likely`: Likely userspace fallback to TCP path
+- `rdma_link_inactive`: RDMA links were detected but none appear active
+- `high_speed_nic_present_no_rdmastack`: High-speed NIC detected without RDMA stack evidence
+- `possible_slingshot_path`: CXI/libfabric signals suggest a possible Slingshot path
+- `possible_roce_path`: Signals suggest a possible RoCE path
+- `fast_path_present_but_degraded`: Fast path is present but appears degraded
+- `node_unsuitable_for_multi_node_mpi`: Node likely unsuitable for multi-node MPI fast path
+- `gpu_network_path_likely_host_staged`: GPU traffic is likely host-staged
 
 ## Known limitations
 
 - GPU-path hints are heuristic and cautious by design; they do not prove runtime behavior.
 - Output formats may differ in detail level during active development (`json` is canonical).
-- Vendor-specific output variants for `rdma` and `fi_info` are still being broadened.
+- Additional vendor-specific output variants are still expected and should be added with fixtures as observed.
 
 ## Safety expectations
 
