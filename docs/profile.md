@@ -66,7 +66,7 @@ Selection logic for `communication_provider`:
 
 - UCX wins when a fast fabric (InfiniBand/RoCE/Slingshot) is present and UCX is detected — this is the GPU-aware path on Linux/OpenMPI nodes
 - CXI wins on Slingshot when UCX is absent — this is the native Cray path
-- Falls back through `verbs → efa → ucx → tcp → sockets` otherwise
+- Falls back through `cxi → verbs → efa → ucx → tcp → sockets` otherwise
 
 ### `mpi_gpu_aware` capability state
 
@@ -80,13 +80,40 @@ This covers both platform paths:
 - Linux/OpenMPI: UCX over InfiniBand/RoCE (CUDA/ROCm memory hooks via UCX UCM)
 - Cray/Slingshot: CXI over Slingshot (GPU Transport Layer)
 
+### Platform class and Cray detection
+
+`platform_class` is derived entirely from signals observed on the remote node — no hostnames or cluster names are hardcoded. Cray PE detection specifically looks for `PE_ENV` and `CRAYPE_VERSION` environment variables on the probed node. If either is set, `is_cray: true` drives `platform_class` to `cray-*` and `environment_model` to `cray_pe`. This means the same tool works on Cray and Linux nodes without any configuration.
+
 ### `active_context`
 
-`context_name` is now populated as `prgenv_module` (Cray nodes) or `mpi_family` (Linux nodes), providing a human-readable label for the active software context.
+`context_name` is derived from the machine in priority order:
+
+1. `prgenv_module` if present (Cray nodes — e.g., `PrgEnv-nvidia`)
+2. The actual loaded module string matching the MPI family (e.g., `openmpi/5.0` from `LOADEDMODULES`)
+3. The MPI family name as a fallback (e.g., `openmpi`) if no matching loaded module is found
 
 ### `observed_platform_signals`
 
 `provider:ucx` is emitted when UCX is detected alongside the existing `provider:cxi` and `provider:verbs` signals.
+
+## Field sources and tool boundaries
+
+Not all schema fields are populated by clusterinspector. The intended sources are:
+
+| Field | Source |
+|-------|--------|
+| `capabilities.t0` / `t1` / `t2` | clusterinspector (passive inference) |
+| `capabilities.mpi_gpu_aware` / `gpudirect_rdma` | clusterinspector (passive inference) |
+| `capabilities.t3` / `dl_collectives` | `gpu-benchmark-suite` (benchmark execution) |
+| `validation_evidence.*` | `gpu-benchmark-suite` (after benchmark runs) |
+| `monitoring.dcgm_endpoint` / `prometheus_endpoint` | site metadata input |
+| `scheduler.tres_gpu_enabled` | Slurm config query (not yet implemented) |
+
+`capabilities.t3`, `capabilities.dl_collectives`, and `validation_evidence.*` are intentionally left at `unknown`/empty in clusterinspector output. They are populated by `gpu-benchmark-suite` after nccl-tests/rccl-tests runs and merged into the profile artifact before release publication.
+
+### Reserved CLI flags
+
+`--include-gpu`, `--include-mpi`, `--include-modules` are defined in the CLI parser but not yet active. They are reserved for Phase 5 selective collection.
 
 ## Implementation order
 

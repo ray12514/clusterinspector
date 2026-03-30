@@ -36,8 +36,32 @@ clusterinspector fabric --scheduler slurm --summary
   - Current: local/SSH/scheduler host resolution, passive probe stages, diagnosis rendering across human/JSON/Markdown, optional GPU-path hints.
   - Next: complete real-cluster validation matrix and threshold tuning from observed evidence.
 - `clusterinspector profile`
-  - Current: working representative-node profile collection with YAML/JSON/human output and file-writing support.
+  - Current: working representative-node profile collection with YAML/JSON/human/markdown output and file-writing support.
   - Next: site metadata inputs, comparison/drift checks, and submit-mode hardening.
+
+### Profile command options
+
+```bash
+# Output formats
+clusterinspector profile --local
+clusterinspector profile --local --format yaml
+clusterinspector profile --local --format json
+clusterinspector profile --local --format markdown
+
+# Remote node
+clusterinspector profile --nodes gpu001
+clusterinspector profile --nodes gpu001,gpu002
+
+# Write to file or directory
+clusterinspector profile --local --output profile.yaml
+clusterinspector profile --local --output-dir profiles/
+
+# Artifact normalization overrides
+clusterinspector profile --local --system-name mycluster --site mysite --context-name openmpi-cuda12
+
+# Batch (scaffolded, not yet active)
+clusterinspector profile submit --scheduler slurm --partition gpu --output profiles/
+```
 
 ## Repository layout
 

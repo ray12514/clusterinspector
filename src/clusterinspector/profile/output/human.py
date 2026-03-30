@@ -38,6 +38,8 @@ def _render_profile(profile: Dict[str, object]) -> List[str]:
         f"    T1: {capabilities.get('t1', {}).get('state', 'unknown')}",
         f"    T2: {capabilities.get('t2', {}).get('state', 'unknown')}",
         f"    T3: {capabilities.get('t3', {}).get('state', 'unknown')}",
+        f"    MPI GPU-aware: {capabilities.get('mpi_gpu_aware', {}).get('state', 'unknown')}",
+        f"    GPUDirect RDMA: {capabilities.get('gpudirect_rdma', {}).get('state', 'unknown')}",
     ]
     return lines
 

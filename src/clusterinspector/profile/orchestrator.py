@@ -111,7 +111,11 @@ def _has_fast_fabric(nics: List[Dict[str, str]]) -> bool:
 
 
 def _apply_capabilities(
-    profile: Dict[str, object], mpi_family: str, available_providers: List[str]
+    profile: Dict[str, object],
+    mpi_family: str,
+    available_providers: List[str],
+    gpu: Dict[str, object],
+    compiler: Dict[str, object],
 ) -> None:
     capabilities = profile["capabilities"]
     gpus = profile["hardware"]["gpus"]
@@ -125,6 +129,17 @@ def _apply_capabilities(
         "ucx" in available_providers or "cxi" in available_providers
     )
 
+    # GPUDirect RDMA requires kernel peer-memory support OR Cray CXI GTL.
+    # Fast fabric + GPU alone is not sufficient — e.g. LIQID PCIe-switched systems
+    # route GPU↔NIC traffic through host memory (SYS/SOC topology tokens).
+    peer_mem = bool(gpu.get("peer_mem_present", False))
+    # Cray GTL (GPU Transport Layer) provides GPU RDMA over Slingshot CXI natively
+    has_cxi_gtl = "cxi" in available_providers and bool(compiler.get("is_cray", False))
+    has_gpu_rdma_evidence = peer_mem or has_cxi_gtl
+    # Topology hint: PIX/PXB = same/nearby PCIe root (structurally possible); SYS/SOC = host-staged
+    gpu_nic_topo = str(gpu.get("gpu_nic_topology", "")).upper()
+    has_direct_path = any(t in gpu_nic_topo for t in ("PIX", "PXB", "NV"))
+
     capabilities["t0"] = capability_state("observed" if has_gpu else "unknown")
     capabilities["t1"] = capability_state("inferred" if has_gpu and has_mpi else "unknown")
     capabilities["t2"] = capability_state("observed" if has_gpu and has_fast_fabric else "unknown")
@@ -134,7 +149,11 @@ def _apply_capabilities(
         else "inferred" if has_gpu and has_mpi
         else "unknown"
     )
-    capabilities["gpudirect_rdma"] = capability_state("observed" if has_gpu and has_fast_fabric else "unknown")
+    capabilities["gpudirect_rdma"] = capability_state(
+        "observed" if has_gpu and has_fast_fabric and has_gpu_rdma_evidence
+        else "inferred" if has_gpu and has_fast_fabric and has_direct_path
+        else "unknown"
+    )
     capabilities["dl_collectives"] = capability_state("unknown")
 
 
@@ -240,7 +259,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         "tests_run": [],
     }
 
-    _apply_capabilities(profile, str(mpi["family"]), available_providers)
+    _apply_capabilities(profile, str(mpi["family"]), available_providers, gpu, compiler)
     return profile
 
 

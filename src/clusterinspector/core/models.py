@@ -59,6 +59,8 @@ class NodeReport:
     health: str = "unknown"
     confidence: str = "low"
     gpu_network_path: str = "unknown"
+    gpu_vendor: str = "unknown"
+    gpu_count: int = 0
     diagnoses: List[str] = field(default_factory=list)
     interfaces: List[InterfaceRecord] = field(default_factory=list)
     evidence: List[Evidence] = field(default_factory=list)
@@ -76,6 +78,8 @@ class NodeReport:
             "health": self.health,
             "confidence": self.confidence,
             "gpu_network_path": self.gpu_network_path,
+            "gpu_vendor": self.gpu_vendor,
+            "gpu_count": self.gpu_count,
             "diagnoses": self.diagnoses,
             "interfaces": [i.to_dict() for i in self.interfaces],
             "evidence": [e.to_dict() for e in self.evidence],

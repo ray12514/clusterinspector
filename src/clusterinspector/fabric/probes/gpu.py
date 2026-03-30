@@ -1,3 +1,4 @@
+import re
 from typing import Dict, List, Tuple
 
 from clusterinspector.core.evidence import make_evidence
@@ -30,16 +31,24 @@ def probe_gpu_hints(
     evidence: List[Evidence] = []
 
     nvidia = runner.run(host, ["nvidia-smi", "topo", "-m"], timeout_s=cmd_timeout)
+    nvidia_names = runner.run(
+        host,
+        ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+        timeout_s=cmd_timeout,
+    )
     rocm = runner.run(host, ["rocm-smi"], timeout_s=cmd_timeout)
 
     nvidia_lines = [ln.strip() for ln in (nvidia.stdout or "").splitlines() if ln.strip()]
     rocm_lines = [ln.strip() for ln in (rocm.stdout or "").splitlines() if ln.strip()]
 
     gpu_vendor = "unknown"
+    gpu_count = 0
     if nvidia.returncode == 0 and nvidia_lines:
         gpu_vendor = "nvidia"
+        gpu_count = sum(1 for ln in (nvidia_names.stdout or "").splitlines() if ln.strip())
     elif rocm.returncode == 0 and rocm_lines:
         gpu_vendor = "amd"
+        gpu_count = sum(1 for ln in rocm_lines if "card series:" in ln.lower())
 
     path_label = "unknown"
     combined = nvidia_lines + rocm_lines
@@ -52,7 +61,7 @@ def probe_gpu_hints(
         evidence.append(
             make_evidence(
                 code="gpu_tooling_visible",
-                message=f"Detected GPU tooling for {gpu_vendor}",
+                message=f"Detected GPU tooling for {gpu_vendor} x{gpu_count}",
                 source="gpu",
                 confidence="medium",
             )
@@ -80,6 +89,7 @@ def probe_gpu_hints(
 
     return {
         "gpu_vendor": gpu_vendor,
+        "gpu_count": gpu_count,
         "gpu_network_path": path_label,
         "nvidia_topology_lines": nvidia_lines,
         "rocm_lines": rocm_lines,

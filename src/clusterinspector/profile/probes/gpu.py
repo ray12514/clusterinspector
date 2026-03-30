@@ -142,6 +142,13 @@ def probe_gpu(runner: Runner, host: str, timeout_s: int = 10) -> Dict[str, objec
         ["bash", "-lc", "rocm-smi --showtopotype --showtoponuma 2>/dev/null"],
         timeout_s=timeout_s,
     )
+    peer_mem = runner.run(
+        host,
+        ["bash", "-lc", "lsmod 2>/dev/null | grep -E 'nvidia_peermem|nv_peer_mem'"],
+        timeout_s=timeout_s,
+    )
+
+    peer_mem_present = bool((peer_mem.stdout or "").strip())
 
     nvidia_models = _parse_nvidia_list(nvidia_names.stdout)
     if nvidia_models:
@@ -152,6 +159,7 @@ def probe_gpu(runner: Runner, host: str, timeout_s: int = 10) -> Dict[str, objec
             "model": nvidia_models[0],
             "count_per_node": len(nvidia_models),
             "compute_capability": cc_lines[0] if cc_lines else "",
+            "peer_mem_present": peer_mem_present,
             **topology,
         }
 
@@ -163,6 +171,7 @@ def probe_gpu(runner: Runner, host: str, timeout_s: int = 10) -> Dict[str, objec
             "model": amd_models[0],
             "count_per_node": len(amd_models),
             "compute_capability": "",
+            "peer_mem_present": peer_mem_present,
             **topology,
         }
 
@@ -171,6 +180,7 @@ def probe_gpu(runner: Runner, host: str, timeout_s: int = 10) -> Dict[str, objec
         "model": "",
         "count_per_node": 0,
         "compute_capability": "",
+        "peer_mem_present": False,
         "interconnect_type": "",
         "interconnect_topology": "",
         "gpu_nic_topology": "",

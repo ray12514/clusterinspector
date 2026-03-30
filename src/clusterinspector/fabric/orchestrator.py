@@ -103,6 +103,8 @@ def scan_fabric(args) -> FleetReport:
                 node.evidence.extend(gpu_evidence)
                 node.raw["gpu"] = gpu_data
                 node.gpu_network_path = str(gpu_data.get("gpu_network_path", "unknown") or "unknown")
+                node.gpu_vendor = str(gpu_data.get("gpu_vendor", "unknown") or "unknown")
+                node.gpu_count = int(gpu_data.get("gpu_count", 0) or 0)
 
             classify_fabrics(node)
             classify_health(node)

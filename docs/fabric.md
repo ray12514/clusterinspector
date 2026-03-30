@@ -42,6 +42,7 @@ Key options:
 - `--command-timeout`: per command timeout (seconds)
 - `--node-timeout`: per node deadline (seconds)
 - `--include-gpu`: enable cautious GPU path hint collection
+- `--passive-only` / `--no-passive-only`: restrict to passive-only probes (default: `true`)
 
 ## Example usage
 

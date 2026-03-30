@@ -9,6 +9,8 @@ def _render_node_line(node: NodeReport, include_diagnoses: bool) -> str:
         f"{node.hostname} primary={node.primary_fabric} mgmt={node.management_fabric} "
         f"health={node.health} confidence={node.confidence}"
     )
+    if node.gpu_vendor != "unknown":
+        line += f" gpu={node.gpu_vendor}x{node.gpu_count}[{node.gpu_network_path}]"
     if include_diagnoses and node.diagnoses:
         line += f" impact={','.join(node.diagnoses)}"
     if not node.ok and node.error:
