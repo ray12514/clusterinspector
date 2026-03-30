@@ -88,7 +88,9 @@ class TestProfileOrchestrator(unittest.TestCase):
         self.assertEqual(payload["hardware"]["gpus"]["interconnect_type"], "nvlink")
         self.assertEqual(payload["hardware"]["network"]["fabric"], "slingshot")
         self.assertEqual(payload["hardware"]["network"]["communication_provider"], "cxi")
+        self.assertEqual(payload["hardware"]["network"]["available_providers"], ["cxi"])
         self.assertEqual(payload["hardware"]["network"]["mpi_provider"], "mpich")
+        self.assertEqual(payload["capabilities"]["mpi_gpu_aware"]["state"], "observed")
         self.assertTrue(payload["hardware"]["gpus"]["gpu_nic_topology"])
         self.assertTrue(payload["hardware"]["gpus"]["numa_affinity"])
         self.assertEqual(payload["capabilities"]["t1"]["state"], "inferred")
@@ -142,6 +144,11 @@ class TestProfileOrchestrator(unittest.TestCase):
                     'for n in /sys/class/net/*; do [ -e "$n" ] || continue; basename "$n"; done 2>/dev/null | sort',
                 ): "ib0\nlo\n",
                 ("bash", "-lc", "fi_info -l 2>/dev/null"): "verbs\n",
+                ("bash", "-lc", "command -v ucx_info >/dev/null 2>&1 && echo ucx_present"): "ucx_present\n",
+                ("bash", "-lc", "ompi_info 2>/dev/null | grep 'MCA pml'"): (
+                    "                 MCA pml: ucx (MCA v2.1.0, API v2.0.0, Component v5.0.6)\n"
+                    "                 MCA pml: ob1 (MCA v2.1.0, API v2.0.0, Component v5.0.6)\n"
+                ),
             }
         )
         args = argparse.Namespace(local=True, nodes="", format="yaml", include_gpu=False, include_mpi=False, include_modules=False)
@@ -151,11 +158,15 @@ class TestProfileOrchestrator(unittest.TestCase):
         self.assertEqual(payload["system"]["environment_model"], "direct_mpi")
         self.assertEqual(payload["system"]["node_role"], "gpu_compute")
         self.assertIn("provider:verbs", payload["system"]["observed_platform_signals"])
+        self.assertIn("provider:ucx", payload["system"]["observed_platform_signals"])
         self.assertEqual(payload["vendor_substrate"]["mpi_family"], "openmpi")
         self.assertEqual(payload["modules"]["active_context"]["gpu_runtime_module"], "cuda/12.4")
+        self.assertEqual(payload["modules"]["active_context"]["context_name"], "openmpi")
         self.assertEqual(payload["hardware"]["network"]["fabric"], "infiniband")
-        self.assertEqual(payload["hardware"]["network"]["communication_provider"], "verbs")
+        self.assertEqual(payload["hardware"]["network"]["communication_provider"], "ucx")
+        self.assertEqual(payload["hardware"]["network"]["available_providers"], ["ucx", "verbs"])
         self.assertEqual(payload["hardware"]["network"]["mpi_provider"], "openmpi")
+        self.assertEqual(payload["capabilities"]["mpi_gpu_aware"]["state"], "observed")
 
     def test_collect_profile_linux_amd(self) -> None:
         runner = FakeRunner(
@@ -217,6 +228,7 @@ class TestProfileOrchestrator(unittest.TestCase):
         self.assertEqual(payload["hardware"]["gpus"]["interconnect_type"], "xgmi")
         self.assertEqual(payload["hardware"]["network"]["fabric"], "ethernet")
         self.assertEqual(payload["hardware"]["network"]["communication_provider"], "unknown")
+        self.assertEqual(payload["hardware"]["network"]["available_providers"], [])
 
     def test_collect_profile_cpu_only_cray_environment(self) -> None:
         runner = FakeRunner(
@@ -341,6 +353,8 @@ class TestProfileOrchestrator(unittest.TestCase):
         self.assertEqual(payload["hardware"]["gpus"]["interconnect_type"], "xgmi")
         self.assertEqual(payload["hardware"]["network"]["fabric"], "slingshot")
         self.assertEqual(payload["hardware"]["network"]["communication_provider"], "cxi")
+        self.assertEqual(payload["hardware"]["network"]["available_providers"], ["cxi"])
+        self.assertEqual(payload["capabilities"]["mpi_gpu_aware"]["state"], "observed")
         self.assertIn("rocm", payload["externals_policy"]["forbid_build"])
 
 

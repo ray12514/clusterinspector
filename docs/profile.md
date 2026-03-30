@@ -45,6 +45,49 @@ The current profile schema includes:
 - externals policy and capability-state payloads
 - validation summary placeholders for future evidence integration
 
+### Network and communication provider detection
+
+`hardware.network` carries three fields:
+
+- `fabric`: primary fabric type (`infiniband`, `slingshot`, `roce`, `ethernet`, `mixed`)
+- `communication_provider`: optimal transport for GPU workloads on this node
+- `available_providers`: all detected transports in priority order
+- `mpi_provider`: MPI family (`openmpi`, `mpich`, `unknown`)
+
+Provider detection sources are layered and graceful — missing tools produce empty results, not errors:
+
+| Source | Command | Detects |
+|--------|---------|---------|
+| libfabric | `fi_info -l` | `verbs`, `cxi`, `efa`, `tcp`, `sockets` |
+| UCX binary | `command -v ucx_info` | `ucx` present on PATH |
+| OpenMPI transports | `ompi_info \| grep 'MCA pml'` | `ucx` as active PML (hardware transport only; `ob1`/`cm` filtered) |
+
+Selection logic for `communication_provider`:
+
+- UCX wins when a fast fabric (InfiniBand/RoCE/Slingshot) is present and UCX is detected — this is the GPU-aware path on Linux/OpenMPI nodes
+- CXI wins on Slingshot when UCX is absent — this is the native Cray path
+- Falls back through `verbs → efa → ucx → tcp → sockets` otherwise
+
+### `mpi_gpu_aware` capability state
+
+Upgraded from a binary `inferred/unknown` model to distinguish when a confirmed GPU transport path is in place:
+
+- `observed`: GPU + MPI + fast fabric + (UCX or CXI detected) — transport path is confirmed passively
+- `inferred`: GPU + MPI but no confirmed GPU-aware transport
+- `unknown`: no GPU or no MPI
+
+This covers both platform paths:
+- Linux/OpenMPI: UCX over InfiniBand/RoCE (CUDA/ROCm memory hooks via UCX UCM)
+- Cray/Slingshot: CXI over Slingshot (GPU Transport Layer)
+
+### `active_context`
+
+`context_name` is now populated as `prgenv_module` (Cray nodes) or `mpi_family` (Linux nodes), providing a human-readable label for the active software context.
+
+### `observed_platform_signals`
+
+`provider:ucx` is emitted when UCX is detected alongside the existing `provider:cxi` and `provider:verbs` signals.
+
 ## Implementation order
 
 1. enrich with site metadata inputs and override files

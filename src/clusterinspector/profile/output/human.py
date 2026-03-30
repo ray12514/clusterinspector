@@ -12,6 +12,10 @@ def _render_profile(profile: Dict[str, object]) -> List[str]:
     scheduler = profile.get("scheduler", {})
     capabilities = profile.get("capabilities", {})
 
+    _comm = network.get("communication_provider", "unknown")
+    _avail = network.get("available_providers", [])
+    _avail_str = f" (available: {', '.join(_avail)})" if len(_avail) > 1 else ""
+
     lines = [
         f"Profile: {system.get('name', 'unknown')}",
         f"  Platform class: {system.get('platform_class', 'unknown')}",
@@ -23,7 +27,7 @@ def _render_profile(profile: Dict[str, object]) -> List[str]:
         f"  GPU: {gpus.get('vendor', 'unknown')} {gpus.get('model', '')} x{gpus.get('count_per_node', 0)}".rstrip(),
         f"  GPU interconnect: {gpus.get('interconnect_type', '') or 'unknown'}",
         f"  Network fabric: {network.get('fabric', 'unknown')}",
-        f"  Communication provider: {network.get('communication_provider', 'unknown')}",
+        f"  Communication provider: {_comm}{_avail_str}",
         f"  Active context: {active_context.get('prgenv_module', '') or active_context.get('mpi_module', '') or 'default shell'}",
         f"  Context name: {active_context.get('context_name', '') or 'unspecified'}",
         f"  Wrapper family: {active_context.get('compiler_wrapper_family', 'unknown')}",

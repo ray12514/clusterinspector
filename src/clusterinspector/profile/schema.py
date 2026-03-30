@@ -55,6 +55,7 @@ def empty_profile(hostname: str) -> Dict[str, Any]:
             "network": {
                 "fabric": "unknown",
                 "communication_provider": "unknown",
+                "available_providers": [],
                 "mpi_provider": "unknown",
             },
         },

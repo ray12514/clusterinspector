@@ -69,6 +69,7 @@ def _observed_platform_signals(
     modules_system: str,
     mpi_family: str,
     providers: List[str],
+    available_providers: List[str],
     nics: List[Dict[str, str]],
 ) -> List[str]:
     signals: List[str] = []
@@ -86,6 +87,8 @@ def _observed_platform_signals(
         signals.append("provider:cxi")
     if "verbs" in providers:
         signals.append("provider:verbs")
+    if "ucx" in available_providers:
+        signals.append("provider:ucx")
     if any(nic.get("fabric") == "slingshot" for nic in nics):
         signals.append("fabric:slingshot")
     if any(nic.get("fabric") == "infiniband" for nic in nics):
@@ -107,7 +110,9 @@ def _has_fast_fabric(nics: List[Dict[str, str]]) -> bool:
     return any(nic.get("fabric") in {"slingshot", "infiniband", "roce"} for nic in nics)
 
 
-def _apply_capabilities(profile: Dict[str, object], mpi_family: str) -> None:
+def _apply_capabilities(
+    profile: Dict[str, object], mpi_family: str, available_providers: List[str]
+) -> None:
     capabilities = profile["capabilities"]
     gpus = profile["hardware"]["gpus"]
     nics = profile["hardware"]["nics"]
@@ -115,12 +120,20 @@ def _apply_capabilities(profile: Dict[str, object], mpi_family: str) -> None:
     has_gpu = gpus.get("count_per_node", 0) > 0
     has_mpi = mpi_family != "unknown"
     has_fast_fabric = _has_fast_fabric(nics)
+    # UCX (Linux/OpenMPI path) and CXI (Cray/Slingshot via GTL) are both GPU-aware transports
+    has_gpu_transport = has_fast_fabric and (
+        "ucx" in available_providers or "cxi" in available_providers
+    )
 
     capabilities["t0"] = capability_state("observed" if has_gpu else "unknown")
     capabilities["t1"] = capability_state("inferred" if has_gpu and has_mpi else "unknown")
     capabilities["t2"] = capability_state("observed" if has_gpu and has_fast_fabric else "unknown")
     capabilities["t3"] = capability_state("unknown")
-    capabilities["mpi_gpu_aware"] = capability_state("inferred" if has_gpu and has_mpi else "unknown")
+    capabilities["mpi_gpu_aware"] = capability_state(
+        "observed" if has_gpu and has_mpi and has_gpu_transport
+        else "inferred" if has_gpu and has_mpi
+        else "unknown"
+    )
     capabilities["gpudirect_rdma"] = capability_state("observed" if has_gpu and has_fast_fabric else "unknown")
     capabilities["dl_collectives"] = capability_state("unknown")
 
@@ -151,6 +164,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         gpu_count=int(gpu.get("count_per_node", 0) or 0),
         scheduler_type=str(system["scheduler"]["type"]),
     )
+    available_providers = list(fabric.get("available_providers", []))
     observed_signals = _observed_platform_signals(
         gpu_vendor=str(gpu["vendor"]),
         is_cray=bool(compiler["is_cray"]),
@@ -158,6 +172,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         modules_system=str(modules["system"]),
         mpi_family=str(mpi["family"]),
         providers=list(fabric["providers"]),
+        available_providers=available_providers,
         nics=list(fabric["nics"]),
     )
     classification_confidence = _classification_confidence(
@@ -184,6 +199,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         "loaded": loaded_modules,
         "active_context": {
             "source": "active_shell",
+            "context_name": str(compiler["prgenv_module"] or mpi["family"] or ""),
             "prgenv_module": compiler["prgenv_module"],
             "gpu_runtime_module": cuda_module or rocm_module,
             "mpi_module": mpi_module,
@@ -198,6 +214,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         "network": {
             "fabric": fabric.get("network", {}).get("fabric", "unknown"),
             "communication_provider": fabric.get("network", {}).get("communication_provider", "unknown"),
+            "available_providers": available_providers,
             "mpi_provider": str(mpi["family"]),
         },
     }
@@ -220,7 +237,7 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         "tests_run": [],
     }
 
-    _apply_capabilities(profile, str(mpi["family"]))
+    _apply_capabilities(profile, str(mpi["family"]), available_providers)
     return profile
 
 

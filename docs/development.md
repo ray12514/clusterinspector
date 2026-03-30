@@ -45,3 +45,6 @@ Execution model:
 - add parser fixtures for any newly observed `rdma` or `fi_info` output variants
 - tune health/confidence thresholds with captured cluster evidence
 - continue Profile Phase 4 depth work after Phase 3 validation closes
+- validate UCX/ompi_info probe output on real InfiniBand + OpenMPI + UCX nodes
+- validate CXI path on Cray/Slingshot nodes (confirm `mpi_gpu_aware: observed` fires)
+- capture `ompi_info | grep 'MCA pml'` output variants for parser fixture coverage
