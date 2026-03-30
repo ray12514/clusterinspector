@@ -199,7 +199,10 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
         "loaded": loaded_modules,
         "active_context": {
             "source": "active_shell",
-            "context_name": str(compiler["prgenv_module"] or mpi["family"] or ""),
+            "context_name": str(compiler["prgenv_module"] or next(
+                (m for m in loaded_modules if str(mpi["family"]) and str(mpi["family"]) in m.lower()),
+                mpi["family"],
+            ) or ""),
             "prgenv_module": compiler["prgenv_module"],
             "gpu_runtime_module": cuda_module or rocm_module,
             "mpi_module": mpi_module,

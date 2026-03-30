@@ -161,7 +161,7 @@ class TestProfileOrchestrator(unittest.TestCase):
         self.assertIn("provider:ucx", payload["system"]["observed_platform_signals"])
         self.assertEqual(payload["vendor_substrate"]["mpi_family"], "openmpi")
         self.assertEqual(payload["modules"]["active_context"]["gpu_runtime_module"], "cuda/12.4")
-        self.assertEqual(payload["modules"]["active_context"]["context_name"], "openmpi")
+        self.assertEqual(payload["modules"]["active_context"]["context_name"], "openmpi/5.0")
         self.assertEqual(payload["hardware"]["network"]["fabric"], "infiniband")
         self.assertEqual(payload["hardware"]["network"]["communication_provider"], "ucx")
         self.assertEqual(payload["hardware"]["network"]["available_providers"], ["ucx", "verbs"])
