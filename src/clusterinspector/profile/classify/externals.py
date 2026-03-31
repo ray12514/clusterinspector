@@ -43,21 +43,47 @@ def _add_module_external(packages: Dict[str, Any], name: str, spec: str, module:
     packages[name].setdefault("externals", []).append({"spec": spec, "modules": [module]})
 
 
+def _cuda_arch_hint(compute_capability: str) -> str:
+    """Convert NVIDIA compute capability '9.0' → Spack cuda_arch value '90'."""
+    return compute_capability.replace(".", "") if compute_capability else ""
+
+
 def classify_externals(profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Build a Spack packages.yaml structure from a clusterinspector system profile.
 
-    Returns a dict with a top-level 'packages' key.  The output is a starter —
-    users should review it and extend it with Linux system library externals via
-    ``spack external find openssl curl zlib git cmake perl python``.
+    Returns a dict with keys 'packages' and 'gpu_arch_hint' (for use in comments).
+    The output is a starter — extend with Linux system library externals via
+    ``spack external find openssl cmake m4 git perl pkgconf``.
     """
     packages: Dict[str, Any] = {}
 
     system = profile.get("system") or {}
     vendor_substrate = profile.get("vendor_substrate") or {}
     ext_policy = profile.get("externals_policy") or {}
+    hardware = profile.get("hardware") or {}
+    gpus = hardware.get("gpus") or {}
     platform_class = str(system.get("platform_class") or "unknown")
     loaded_modules: List[str] = list(profile.get("modules", {}).get("loaded") or [])
+
+    # GPU architecture hint (for Kokkos/RAJA cmake flags — not written to packages.yaml)
+    gpu_vendor = str(gpus.get("vendor") or "").lower()
+    compute_capability = str(gpus.get("compute_capability") or "").strip()
+    if gpu_vendor == "nvidia":
+        gpu_arch_hint = f"cuda_arch={_cuda_arch_hint(compute_capability)}" if compute_capability else ""
+    elif gpu_vendor == "amd":
+        gpu_arch_hint = f"amdgpu_target={compute_capability}" if compute_capability else ""
+    else:
+        gpu_arch_hint = ""
+
+    # MPI — determine provider name early so 'all' section can be written first
+    mpi_module = str(vendor_substrate.get("mpi_module") or "").strip()
+    mpi_family = str(vendor_substrate.get("mpi_family") or "").strip()
+    mpi_pkg_name = _mpi_spack_name(mpi_family, mpi_module) if mpi_module else ""
+
+    # 'all' section first for readability
+    if mpi_pkg_name:
+        packages["all"] = {"providers": {"mpi": [mpi_pkg_name]}}
 
     # Mark every package in forbid_build as non-buildable
     for pkg in ext_policy.get("forbid_build") or []:
@@ -78,14 +104,10 @@ def classify_externals(profile: Dict[str, Any]) -> Dict[str, Any]:
         _add_module_external(packages, "hip", spec, rocm_module)
 
     # MPI
-    mpi_module = str(vendor_substrate.get("mpi_module") or "").strip()
-    mpi_family = str(vendor_substrate.get("mpi_family") or "").strip()
-    if mpi_module:
-        pkg_name = _mpi_spack_name(mpi_family, mpi_module)
+    if mpi_module and mpi_pkg_name:
         version = _parse_version(mpi_module)
-        spec = f"{pkg_name}@{version}" if version else pkg_name
-        _add_module_external(packages, pkg_name, spec, mpi_module)
-        packages.setdefault("all", {}).setdefault("providers", {})["mpi"] = [pkg_name]
+        spec = f"{mpi_pkg_name}@{version}" if version else mpi_pkg_name
+        _add_module_external(packages, mpi_pkg_name, spec, mpi_module)
 
     # CPE scientific libraries (Cray classes only)
     if platform_class.startswith("cray-"):
@@ -107,4 +129,4 @@ def classify_externals(profile: Dict[str, Any]) -> Dict[str, Any]:
                     "modules": [f"<{cpe_prefix}/VERSION>"],
                 })
 
-    return {"packages": packages}
+    return {"packages": packages, "gpu_arch_hint": gpu_arch_hint}
