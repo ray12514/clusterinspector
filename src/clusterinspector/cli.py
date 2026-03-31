@@ -3,6 +3,8 @@ import sys
 
 from clusterinspector.fabric.cli import build_parser as build_fabric_parser
 from clusterinspector.fabric.cli import run as run_fabric
+from clusterinspector.generate.cli import build_parser as build_generate_parser
+from clusterinspector.generate.cli import run as run_generate
 from clusterinspector.profile.cli import build_parser as build_profile_parser
 from clusterinspector.profile.cli import run as run_profile
 
@@ -17,6 +19,9 @@ def build_parser() -> argparse.ArgumentParser:
     profile_parser = subparsers.add_parser("profile", help="Platform profile collection")
     build_profile_parser(profile_parser)
 
+    generate_parser = subparsers.add_parser("generate", help="Generate config artifacts from saved profiles")
+    build_generate_parser(generate_parser)
+
     return parser
 
 
@@ -28,6 +33,8 @@ def main(argv=None) -> int:
         return run_fabric(args)
     if args.command == "profile":
         return run_profile(args)
+    if args.command == "generate":
+        return run_generate(args)
 
     parser.print_help()
     return 2

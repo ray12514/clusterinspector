@@ -6,6 +6,7 @@ from typing import Dict, List
 from clusterinspector.profile.orchestrator import collect_profile
 from clusterinspector.profile.output.human import render_human
 from clusterinspector.profile.output.jsonout import render_json
+from clusterinspector.profile.output.spackpackages import render_spack_packages
 from clusterinspector.profile.output.yamlout import render_yaml
 
 
@@ -76,11 +77,13 @@ def _render_payload(payload: Dict[str, object], output_format: str) -> str:
         return render_json(payload)
     if output_format == "yaml":
         return render_yaml(payload)
+    if output_format == "spack-packages":
+        return render_spack_packages(payload)
     return render_human(payload)
 
 
 def _output_extension(output_format: str) -> str:
-    return {"json": "json", "yaml": "yaml", "human": "txt"}[output_format]
+    return {"json": "json", "yaml": "yaml", "human": "txt", "spack-packages": "yaml"}[output_format]
 
 
 def _artifact_filename(profile: Dict[str, object], output_format: str) -> str:
@@ -140,7 +143,7 @@ def _write_output(payload: Dict[str, object], output_format: str, output_path: s
 def build_parser(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     parser.add_argument("--local", action="store_true", help="Profile current host")
     parser.add_argument("--nodes", default="", help="Comma-separated hostnames")
-    parser.add_argument("--format", choices=["human", "yaml", "json"], default="human")
+    parser.add_argument("--format", choices=["human", "yaml", "json", "spack-packages"], default="human")
     parser.add_argument("--output", default="", help="Write rendered output to a file")
     parser.add_argument("--output-dir", default="", help="Write one artifact per profile into a directory")
     parser.add_argument("--context-name", default="", help="Override the active context name used in artifact naming")
