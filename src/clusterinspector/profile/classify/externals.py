@@ -13,10 +13,11 @@ _MPI_SPACK_NAMES = [
 # CPE module prefix → (Spack package name, spec variant suffix)
 _CPE_LIBS: List[Tuple[str, str, str]] = [
     ("cray-libsci", "cray-libsci", ""),
-    ("cray-hdf5-parallel", "hdf5", " +mpi"),
+    ("cray-hdf5-parallel", "hdf5", " +mpi +hl"),
     ("cray-fftw", "fftw", ""),
     ("cray-netcdf-hdf5parallel", "netcdf-c", " +mpi +parallel-netcdf"),
     ("cray-parallel-netcdf", "parallel-netcdf", ""),
+    ("cray-pals", "cray-pals", ""),
 ]
 
 
@@ -96,12 +97,15 @@ def classify_externals(profile: Dict[str, Any]) -> Dict[str, Any]:
         spec = f"cuda@{version}" if version else "cuda"
         _add_module_external(packages, "cuda", spec, cuda_module)
 
-    # ROCm — declare as 'hip', which is what most Spack packages depend on
+    # ROCm — declare 'hip' (the Spack name for the ROCm SDK) plus the two
+    # runtime sub-packages that Spack may resolve as dependencies.
     rocm_module = str(vendor_substrate.get("rocm_module") or "").strip()
     if rocm_module:
         version = _parse_version(rocm_module)
         spec = f"hip@{version}" if version else "hip"
         _add_module_external(packages, "hip", spec, rocm_module)
+        for sub_pkg in ("rocm-opencl-runtime", "rocm-smi-lib"):
+            _add_module_external(packages, sub_pkg, sub_pkg, rocm_module)
 
     # MPI
     if mpi_module and mpi_pkg_name:

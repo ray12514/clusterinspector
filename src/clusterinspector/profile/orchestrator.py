@@ -24,11 +24,11 @@ def _platform_class(*, gpu_vendor: str, is_cray: bool) -> str:
 def _forbid_builds(platform_class: str, gpu_vendor: str, mpi_module: str) -> List[str]:
     forbidden: List[str] = []
     if platform_class.startswith("cray") and mpi_module:
-        forbidden.append(mpi_module)
+        forbidden.append(mpi_module.split("/")[0])  # strip version: "cray-mpich/8.1.29" → "cray-mpich"
     if gpu_vendor == "nvidia":
         forbidden.append("cuda")
     elif gpu_vendor == "amd":
-        forbidden.append("rocm")
+        forbidden.append("hip")  # "hip" is the Spack package name for the ROCm SDK
     return forbidden
 
 
@@ -172,7 +172,15 @@ def _profile_host(runner: Runner, host: str) -> Dict[str, object]:
     loaded_modules = modules.get("loaded", [])
     cuda_module = next((item for item in loaded_modules if "cuda" in item.lower()), "")
     rocm_module = next((item for item in loaded_modules if "rocm" in item.lower()), "")
-    mpi_module = str(mpi.get("module_name") or "")
+    # Resolve the actual loaded MPI module name (e.g. "cray-mpich/8.1.29").
+    # mpi.py returns a generic family string as module_name; the real loaded
+    # module is found by scanning loaded_modules for known MPI prefixes.
+    _MPI_MODULE_PREFIXES = ("cray-mpich", "openmpi", "mvapich2", "mvapich", "mpich")
+    mpi_module = next(
+        (m for m in loaded_modules
+         if any(m == p or m.startswith(p + "/") for p in _MPI_MODULE_PREFIXES)),
+        str(mpi.get("module_name") or ""),
+    )
     wrapper_family = _wrapper_family(list(compiler["compiler_wrappers"]))
     environment_model = _environment_model(
         is_cray=bool(compiler["is_cray"]),
